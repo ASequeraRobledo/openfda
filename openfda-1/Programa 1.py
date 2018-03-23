@@ -16,6 +16,6 @@ informacion = json.loads(repos_raw)
 #sabemos que en api tenemos un diccionario, por tanto utilizamos las funciones de un diccionario para encontrar los diferentes elementos
 medicamento_info=informacion["results"][0]
 
-print("Id del medicamento",medicamento_info["id"])
+print("Id del medicamento:",medicamento_info["id"])
 print("El medicamento es usado para:",medicamento_info["purpose"][0])
 print("El medicamento lo fabrica:",medicamento_info["openfda"]["manufacturer_name"])
