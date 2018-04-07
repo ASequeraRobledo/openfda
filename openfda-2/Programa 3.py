@@ -21,3 +21,5 @@ for a in range(len(info)):
     print("Id del medicamento:", info_medicamento["id"])
     if info_medicamento["openfda"]:
         print("La aspirina es fabricada por:",info_medicamento["openfda"]["manufacturer_name"][0])
+    else:
+        print("Fabricante no disponible")

@@ -21,8 +21,11 @@ medicamento_info = informacion["results"]
 lista = []
 for i in medicamento_info:# Iteramos sobre las variables que tiene la página
     if i['openfda']:
-            nombre = i['openfda']['brand_name'][0]
-            lista.append(nombre)
+        nombre = i['openfda']['brand_name'][0]
+        lista.append(nombre)
+    else:
+        nombre = "Medicamento no disponible" # Condición que evalúa el caso en el que no aparezca un medicamento
+        lista.append(nombre)
 
 # sabemos que en la página a la que accedemos el contenido es json y json se encuentra en forma de diccionario por tanto utilizamos las funciones de un diccionario para encontrar los diferentes elementos
 
@@ -60,7 +63,7 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
 # A partir de aquí comienzan las instrucciones del servidor
 Handler = testHTTPRequestHandler
-httpd = socketserver.TCPServer(("", PORT), Handler) #
+httpd = socketserver.TCPServer(("", PORT), Handler)
 print("Sirviendo en puerto: {}".format(PORT))
 
 try:
