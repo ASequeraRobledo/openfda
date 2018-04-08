@@ -4,8 +4,8 @@ import json
 # Empleamos un código que utiliza la biblioteca http.client que hemos importado para leer repositorios
 headers = {'User-Agent': 'http-client'}
 conn = http.client.HTTPSConnection("api.fda.gov")
-conn.request("GET", "/drug/label.json", None, headers)
-r1 = conn.getresponse()
+conn.request("GET", "/drug/label.json", None, headers) # Fase de petición
+r1 = conn.getresponse() # A partir de aquí la fase de respuesta
 print(r1.status, r1.reason)
 repos_raw = r1.read().decode("utf-8")
 conn.close()
