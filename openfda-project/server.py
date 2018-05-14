@@ -55,21 +55,16 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
     #En esta función se define el contenido que aparecerá en la página al rellenar el formulario
     def content (self, list):
-        contenido = """
-                                <html>
-                                    <head>
-                                        <title>Resultados de su búsqueda</title>
-                                    </head>
+        contenido = """ <html>
+                        <head><title>Resultados de su búsqueda</title></head>
                                     <body>
-                                        <ul>
-                            """
+                                        <ul>"""
         for a in list:
             contenido += "<li>" + a + "</li>"
         contenido += """
-                                        </ul>
+                                     </ul>
                                     </body>
-                                </html>
-                            """
+                                </html>"""
         return contenido
 
 
