@@ -1,135 +1,229 @@
-from flask import Flask
-from flask import jsonify
-from flask import request
+#Importamos los módulos necesarios para poder ejecutar el servidor
+import http.server
 import http.client
 import json
-import http.server
+import socketserver
 
-app = Flask(__name__)
+#Indicamos el puerto
+PORT=8000
 
-#-------------------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------------------------
 
-#aquí tendríamos la parte en la que como clientes obtenemos información de la página openfda
-#Creamos las listas que vamos a utilizar
-headers = {'User-Agent': 'http-client'}
-conn = http.client.HTTPSConnection("api.fda.gov")
-conn.request("GET", "/drug/label.json?limit=60", None, headers)
-r1 = conn.getresponse()
-print(r1.status, r1.reason)
-repos_raw = r1.read().decode("utf-8")
-conn.close()
-informacion = json.loads(repos_raw)
-medicamento_info = informacion["results"]
+#Utilizamos la misma clase que en la práctica anterior, una clase derivada de BaseHTTPRequestHandler
+class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
+    #urls necsarias en posteriores procesos
+    url_openfda = "api.fda.gov"
+    client_openfda = "/drug/label.json"
+    drug_openfda = '&search=active_ingredient:'
+    company_openfda = '&search=openfda.manufacturer_name:'
 
-#Documento del índice (tengo que introducir un input)
-Index_html="""<html>
-        <head>
-        <meta charset = "utf-8">
-        <title>Medicamentos</title>
-        </head>
-        <body style="background-color:lightblue">
-        <h1>Indice</h1>
-        <p>1-.)Información concreta sobre un medicamento</p>
-        <a href="http://127.0.0.1:8000/formSearchDrug">Enlace a la página</a>
-        <p>2-.)Información concreta sobre una empresa</p>
-        <a href="http://127.0.0.1:8000/formSearchCompany">Enlace a la página</a>
-        <p>3-.)Listado de medicamentos</p>
-        <a href="http://127.0.0.1:8000/listDrugs">Enlace a la página</a>
-        <p>4-.)Listado de empresas de medicamentos</p>
-        <a href="http://127.0.0.1:8000/listCompanies">Enlace a la página</a>
-        <img src="http://www.openbiomedical.org/wordpress/wp-content/uploads/2015/09/openfda_logo.jpg?x10565.png"width=30% height=20% align=right>
-        <ul>Toda la información que pueden encontrar ha sido obtenida de las bases de Openfda</ul>
-        </body>
-        </html>"""
+    #Creamos una función en la que se controla el contenido en un documento html de la página de inicio, que es la página principal
+    def start_page(self):
+        main_page = """<html>
+                <head>
+                    <title>Medicamentos OpenFda</title>
+                </head>
+                <body style="background-color:lightblue">
+                    <h1>Medicamentos OpenFda </h1>
+                    <p>Aqui usted puede encontrar todo tipo de informacion de medicamentos, obtenida de la base de informacion OpenFda</p>
+                    <p>1-.)Lista de medicamentos</p>
+                    <form action="listDrugs" method="get"><input type = "submit" value="Drug List"></input></form>
+                    <p>2-.)Buscar medicamentos</p>
+                    <form action="searchDrug" method="get"><input type = "submit" value="search"><input type = "text" name="drug"></input></input></form>
+                    <p>3-.)Lista de empresas</p>
+                    <form action="listCompanies method="get"><input type = "submit" value="Company List"></input></form>
+                    <p>4-.)Buscar empresas</p>
+                    <form action="searchCompany" method="get"><input type = "submit" value="search"><input type = "text" name="company"></input></input></form>
+                    <p>**Advertencias**
+                    <form action="listWarnings" method="get"><input type = "submit" value="Warnings List"></input></form>
+                    <img src="http://www.openbiomedical.org/wordpress/wp-content/uploads/2015/09/openfda_logo.jpg?x10565.png"width=30% height=20% align=right>
+                </body>
+            </html>"""
+        return main_page
 
+    #En esta función se regula lo relativo a la conexión , que utilizaremos para las que no son formularios
+    def conexion (self, limit=10):
+        conn = http.client.HTTPSConnection(self.url_openfda) #lo que nuestra página como cliente sugiere
+        conn.request("GET", self.client_openfda + "?limit="+str(limit)) #la petición del cliente de nuestra página
+        print (self.client_openfda + "?limit="+str(limit))
+        r1 = conn.getresponse()
+        data_raw = r1.read().decode("utf8")
+        informacion = json.loads(data_raw)
+        resultados = informacion['results']
+        return resultados
 
-formulario_empresa="""<html>
-        <head>
-        <meta charset = "utf-8">
-        <title>Medicamentos</title>
-        </head>
-        <body style="background-color:lightpink">
-        <form action="/searchCompany" method="get">
-        <div><label for="name">Company name:</label><input type="text" id="name" name="company_name" /></div><div class="button"><button type="submit">Send your message</button></div>
-        </form>
-        </html"""
-
-formulario_drogas="""<html>
-        <head>
-        <meta charset = "utf-8">
-        <title>Medicamentos</title>
-        </head>
-        <body style="background-color:lightblue">
-        <form action="/searchDrug" method="get">
-        <div><label for="name">Drug name:</label><input type="text" id="drug_name" name="name_ingredient" /></div><div class="button"><button type="submit">Send your message</button></div>
-        </form>
-        </html"""
-
-
-
-#Creación de las listas
-lista_medicamentos = []
-lista_empresas=[]
-for i in medicamento_info:# Iteramos sobre las variables que tiene la página
-    if i['openfda']:
-        nombre = i['openfda']['brand_name'][0]
-        lista_medicamentos.append(nombre)
-    else:
-        nombre = "Medicamento no disponible" # Condición que evalúa el caso en el que no aparezca un medicamento
-        lista_medicamentos.append(nombre)
-
-for i in medicamento_info:# Iteramos sobre las variables que tiene la página
-    if i['openfda']:
-        nombre_2 = i['openfda']['manufacturer_name']
-        lista_empresas.append(nombre_2)
-    else:
-        nombre_2 = "Empresa no disponible" # Condición que evalúa el caso en el que no aparezca un medicamento
-        lista_empresas.append(nombre_2)
-
-#---------------------------------------------------------------------------------
-
-@app.route('/')
-def getInicio():
-    return Index_html
-
-@app.route('/formSearchDrug',methods=['GET','POST'])
-def getDrugAllEmpp():
-    return formulario_drogas
-
-@app.route('/searchDrug',methods=['GET','POST'])
-def getAllEmpp():
-    ingrediente = request.args.get('name_ingredient')
-    #return ingrediente
-    lista=["hola","adios"]
-    return '''
-    <html>
-        <head>
-            <title>Home Page - Microblog</title>
-        </head>
-        <body>
-            <h1>Hello, ''' + lista[0]+ '''!</h1>
-            <h1>Hello, ''' + ingrediente+ '''!</h1>
-        </body>
-    </html>'''
-
-@app.route('/formSearchCompany', methods=['GET','POST']) #Me permite rellenar la url correctamente
-def getpostAll():
-    return formulario_empresa
-
-@app.route('/searchCompany',methods=['GET','POST'])
-def getAllEmp():
-    company = request.args.get('company_name')
-    return "Me has dicho"+company
-
-@app.route('/listDrugs',methods=['GET'])
-def getAllList() :
-    return jsonify({'Drugs': lista_medicamentos})
-
-@app.route('/listCompanies',methods=['GET'])
-def getListCompanies():
-    return jsonify({'Companies': lista_empresas})
+    #En esta función se define el contenido que aparecerá en la página al rellenar el formulario
+    def content (self, list):
+        contenido = """
+                                <html>
+                                    <head>
+                                        <title>Resultados de su búsqueda</title>
+                                    </head>
+                                    <body>
+                                        <ul>
+                            """
+        for a in list:
+            contenido += "<li>" + a + "</li>"
+        contenido += """
+                                        </ul>
+                                    </body>
+                                </html>
+                            """
+        return contenido
 
 
-if __name__ == '__main__':
-    app.run(host="0.0.0.0",port=8000)
+    def do_GET(self):
+        recurso_list = self.path.split("?")
+        if len(recurso_list) > 1:
+            parametros = recurso_list[1]
+        else:
+            parametros = ""
+        limit = 1
+
+        # Obtener los parametros
+        if parametros:
+            parse_limit = parametros.split("=")
+            if parse_limit[0] == "limit":
+                limit = int(parse_limit[1])
+                print("Limit: {}".format(limit))
+        else:
+            print("SIN PARAMETROS")
+
+
+# Ahora comienzan las condiciones según el contenido que pone el cliente en la url, en utf8
+
+        #Condición en la que se evalúa lo que debe devolver el servidor si se añade -> /
+        if self.path=='/':
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html') #cabeceras necesarias para que el cliente entienda el contenido que le enviamos
+            self.end_headers()
+            html=self.start_page()  #Llamamos a la función en la que tenemos el contenido de la página principal y la almacenamos en una variable
+            self.wfile.write(bytes(html, "utf8"))  #"Escribimos" el contenido que corresponde a la página principal
+
+        #Condición en la que se devuelve una lista de medicamentos de la openfda al añadir en la url-> listDrugs
+        elif 'listDrugs' in self.path:
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html') #cabeceras necesarias para que el cliente entienda el contenido que le enviamos
+            self.end_headers()
+            medicamentos = [] #lista vacía en la que se iran añadiendo los medicamentos
+            resultados = self.conexion(limit) #llamamos a la función que nos devuelve los resultados de la búsqueda en openfda para poder añadir a la lista lo que buscamos
+            for resultado in resultados:
+                if ('generic_name' in resultado['openfda']):
+                    medicamentos.append (resultado['openfda']['generic_name'][0]) #buscamos dentro de los resultados con las propiedades de los diccionarios
+                else:
+                    medicamentos.append('Medicamento no encontrado') #Se valora el caso en el que no aparece un medicamento
+            resultado_html = self.content (medicamentos) #llamamos a la función en la que se encuentra el contenido e introducimos como argumento los medicamentos para que se añadan al contenido
+            self.wfile.write(bytes(resultado_html, "utf8")) #escribimos el contenido en la página
+
+        #Condición en la que se devuelve una lista de empresas de la openfda al añadir a la url-> listCompanies
+        elif 'listCompanies' in self.path:
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')  #cabeceras necesarias para que el cliente entienda el contenido que le enviamos
+            self.end_headers()
+            companies = [] #creamos una lista vacía en la que se añaden las empresas
+            resultados = self.conexion (limit) #llamamos a la funcion que nos devuelve los resultados de la búsqueda
+            for resultado in resultados:
+                if ('manufacturer_name' in resultado['openfda']):
+                    companies.append (resultado['openfda']['manufacturer_name'][0]) #buscamos dentro de los resultados con las propiedades
+                else:
+                    companies.append('Empresa no encontrada') #se valora el caso en el que la empresa no se ha podido encontrar
+            resultado_html = self.content(companies) #llamamos a la función en la que se encuentra el contenido al rellenar un formularion y ponemos de argumento la lista de empresas para que se añada
+            self.wfile.write(bytes(resultado_html, "utf8")) #escribimos el contenido en la página
+
+        #Condición en la que se devuelven una serie de riesgos de los medicamentos al añadir a la url-> listWarnings
+        elif 'listWarnings' in self.path:
+            # Send response status code
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')  #cabeceras necesarias para que el cliente entienda el contenido que le enviamos
+            self.end_headers()
+            warnings = [] #lista en la que se añadirán las advertencias o riesgos
+            resultados = self.conexion (limit)
+            for resultado in resultados:
+                if ('warnings' in resultado):
+                    warnings.append (resultado['warnings'][0]) #buscamos mediante las propiedades de los diccionarios el apartado de warnings
+                else:
+                    warnings.append('No encontrado') #caso en el que no se encuentran los riesgos o avisos
+            resultado_html = self.content(warnings) #llamamos a la función que tiene el contenido de la página tras rellenar el formulario y ponemos como argumento la lista creada anteriormente para que se añada como contenido en la misma
+            self.wfile.write(bytes(resultado_html, "utf8")) #escribimos el contenido en la página
+
+        #Condición que nos devuelve lo pedido en el formulario sobre medicamentos
+        elif 'searchDrug' in self.path:
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')  #cabeceras necesarias para que el cliente entienda el contenido que le enviamos
+            self.end_headers()
+            limit = 10 #cambiamos limit
+            drug=self.path.split('=')[1] #ponemos aquí el igual ya que posteriormente como lo hacemos llamando a una variable
+            drugs = []
+            conn = http.client.HTTPSConnection(self.url_openfda) #nuestra página es cliente de openfda
+            conn.request("GET", self.client_openfda + "?limit="+str(limit) + self.drug_openfda + drug) #creamos la url de petición de nuestra página a openfda
+            r1 = conn.getresponse()
+            data1 = r1.read()
+            data = data1.decode("utf8")
+            biblioteca = json.loads(data)
+            resultados_drug = biblioteca['results'] #tenemos en una variable los resultados de la búsqueda
+            for r in resultados_drug:
+                if ('generic_name' in r['openfda']):
+                    drugs.append(r['openfda']['generic_name'][0])
+                else:
+                    drugs.append('Medicamento no encontrado')
+
+            resultado_html = self.content(drugs)
+            self.wfile.write(bytes(resultado_html, "utf8"))
+
+        #Condición que nos devuelve lo pedido en el formulario sobre empresas
+        elif 'searchCompany' in self.path:
+            # Send response status code
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')  #cabeceras necesarias para que el cliente entienda el contenido que le enviamos
+            self.end_headers()
+            limit = 10 #cambiamos limit
+            company=self.path.split('=')[1]
+            companies = [] #creamos una lista vacía en la que se añaden las empresas
+            conn = http.client.HTTPSConnection(self.url_openfda)  #nuestra página es cliente de openfda
+            conn.request("GET", self.client_openfda + "?limit=" + str(limit) + self.company_openfda + company) #creamos la url de petición de nuestra página a openfda
+            r1 = conn.getresponse()
+            data1 = r1.read()
+            data = data1.decode("utf8")
+            biblioteca = json.loads(data)
+            resultados_company = biblioteca['results'] #tenemos en una variable los resultados de la búsqueda
+
+            for u in resultados_company:
+                if ('manufacturer_name' in u['openfda']):
+                    companies.append(u['openfda']['manufacturer_name'][0])  # buscamos dentro de los resultados con las propiedades
+                else:
+                    companies.append('Empresa no encontrada')
+            resultado_html = self.content(companies)
+            self.wfile.write(bytes(resultado_html, "utf8"))
+
+
+        #Algunas de las extensiones aunque más arriba podemos encontrar mas
+
+        #Condición en la que al añadir a la url-> redirect nos devuelve un error
+        elif 'redirect' in self.path:
+            self.send_error(302)
+            self.send_header('Location', 'http://localhost:'+str(PORT))
+            self.end_headers()
+
+        # Condición en la que al añadir a la url-> secret nos devuelve un error
+        elif 'secret' in self.path:
+            self.send_error(401)
+            self.send_header('WWW-Authenticate', 'Basic realm="Mi servidor"')
+            self.end_headers()
+
+        # Condición en la que se valora cuando lo que se introduce en la url no está especificado en ninguna de las condiciones anteriores y nos salta un error
+        else:
+            self.send_error(404)
+            self.send_header('Content-type', 'text/plain; charset=utf-8')
+            self.end_headers()
+            self.wfile.write("I don't know '{}'.".format(self.path).encode())
+        return
+
+
+#Aquí se ejecuta el manejador
+socketserver.TCPServer.allow_reuse_address= True
+Handler = testHTTPRequestHandler
+httpd = socketserver.TCPServer(("", PORT), Handler)
+print("200 OK")
+print("serving at port", PORT)
+httpd.serve_forever()
