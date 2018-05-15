@@ -20,31 +20,37 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
     #Creamos una función en la que se controla el contenido en un documento html de la página de inicio, que es la página principal
     def start_page(self):
-        main_page = """<html>
+        main_page ="""<html>
                 <head>
                     <title>Medicamentos OpenFda</title>
                 </head>
-                <body style="background-color:lightblue">
-                    <h1>Medicamentos OpenFda </h1>
-                    <p>Aqui usted puede encontrar todo tipo de informacion de medicamentos, obtenida de la base de informacion OpenFda</p>
+                <body align=center style='background-color: lightblue'>
+                    <h1>OpenFda</h1>
+                    <br>
                     <p>1-.)Lista de medicamentos</p>
-                    <form action="listDrugs" method="get"><input type = "submit" value="Drug List"></input></form>
-                    <form action= "limit" method="get"><input type = "submit" value="Limit"><input type="text" name="number"></input></input></form>
+                    <form method="get" action="listDrugs"><input type = "submit" value="Drugs list"></input></form>
+                    <br>
+                    <br>
                     <p>2-.)Buscar medicamentos</p>
-                    <form action="searchDrug" method="get"><input type = "submit" value="search"><input type = "text" name="drug"></input></input></form>
-                    <form action= "limit" method="get"><input type = "submit" value="Limit"><input type="text" name="number"></input></input></form>
+                    <form method="get" action="searchDrug"><input type = "submit" value="Search drug"><input type = "text" name="drug"></input></input></form>
+                    <br>
+                    <br>
                     <p>3-.)Lista de empresas</p>
-                    <form action="listCompanies method="get"><input type = "submit" value="Company List"></input></form>
-                    <form action= "limit" method="get"><input type = "submit" value="Limit"><input type="text" name="number"></input></input></form>
+                    <form method="get" action="listCompanies"><input type = "submit" value="Companies list"></input></form>
+                    <br>
+                    <br>
                     <p>4-.)Buscar empresas</p>
-                    <form action="searchCompany" method="get"><input type = "submit" value="search"><input type = "text" name="company"></input></input></form>
-                    <form action= "limit" method="get"><input type = "submit" value="Limit"><input type="text" name="number"></input></input></form>
-                    <p>**Advertencias**
-                    <form action="listWarnings" method="get"><input type = "submit" value="Warnings List"></input></form>
-                    <form action= "limit" method="get"><input type = "submit" value="Limit"><input type="text" name="number"></input></input></form>
-                    <img src="http://www.openbiomedical.org/wordpress/wp-content/uploads/2015/09/openfda_logo.jpg?x10565.png"width=30% height=20% align=right>
+                    <form method="get" action="searchCompany"><input type = "submit" value="Search companies"><input type = "text" name="company"></input></input></form>
+                    <br>
+                    <br>
+                    <p>5-.)Lista de advertencias</p>
+                    <form method="get" action="listWarnings"><input type = "submit" value="Lista Advertencias"></input></form>
+                    <br>
+                    <br>
+                    <img src="http://www.openbiomedical.org/wordpress/wp-content/uploads/2015/09/openfda_logo.jpg?x10565.png"width=30% height=20% clear=left>
                 </body>
-            </html>"""
+            </html>
+                """
         return main_page
 
     #En esta función se regula lo relativo a la conexión , que utilizaremos para las que no son formularios
@@ -79,7 +85,7 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             parametros = recurso_list[1]
         else:
             parametros = ""
-        limit = 1
+        limit = 10
 
         # Obtener los parametros
         if parametros:
@@ -199,21 +205,18 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
         #Algunas de las extensiones aunque más arriba podemos encontrar mas
 
-        #Condición en la que al añadir a la url-> redirect nos devuelve un error
+        # Condición en la que al añadir a la url-> secret nos devuelve un error
+        elif 'secret' in self.path:
+            self.send_response(401)
+            self.send_header('WWW-Authenticate', 'Basic realm="Secure Area"')
+            self.end_headers()
+
+        # Condición en la que al añadir a la url-> redirect nos devuelve un error
         elif 'redirect' in self.path:
             self.send_response(301)
             self.send_header('Location', 'http://127.0.0.1:8000')
-            self.send_header('Content-type','text/html')
+            self.send_header('Content-type', 'text/html')
             self.end_headers()
-
-
-
-        # Condición en la que al añadir a la url-> secret nos devuelve un error
-        elif 'secret' in self.path:
-            self.send_error(401)
-            self.send_header('WWW-Authenticate', 'Basic realm="server"')
-            self.end_headers()
-
         # Condición en la que se valora cuando lo que se introduce en la url no está especificado en ninguna de las condiciones anteriores y nos salta un error
         else:
             self.send_error(404)
