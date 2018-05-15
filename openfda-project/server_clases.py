@@ -25,7 +25,56 @@ class OpenFDAClient(http.server.BaseHTTPRequestHandler):
         resultados = informacion['results']
         return resultados
 
-class OpenFDAParser(OpenFDAClient):
+class OpenFDAHTML(OpenFDAClient):
+    def start_page(self):
+        main_page ="""<html>
+                <head>
+                    <title>Medicamentos OpenFda</title>
+                </head>
+                <body align=center style='background-color: lightblue'>
+                    <h1>OpenFda</h1>
+                    <br>
+                    <p>1-.)Lista de medicamentos</p>
+                    <form method="get" action="listDrugs"><input type = "submit" value="Drugs list"></input></form>
+                    <br>
+                    <br>
+                    <p>2-.)Buscar medicamentos</p>
+                    <form method="get" action="searchDrug"><input type = "submit" value="Search drug"><input type = "text" name="drug"></input></input></form>
+                    <br>
+                    <br>
+                    <p>3-.)Lista de empresas</p>
+                    <form method="get" action="listCompanies"><input type = "submit" value="Companies list"></input></form>
+                    <br>
+                    <br>
+                    <p>4-.)Buscar empresas</p>
+                    <form method="get" action="searchCompany"><input type = "submit" value="Search companies"><input type = "text" name="company"></input></input></form>
+                    <br>
+                    <br>
+                    <p>5-.)Lista de advertencias</p>
+                    <form method="get" action="listWarnings"><input type = "submit" value="Lista Advertencias"></input></form>
+                    <br>
+                    <br>
+                    <img src="http://www.openbiomedical.org/wordpress/wp-content/uploads/2015/09/openfda_logo.jpg?x10565.png"width=30% height=20% clear=left>
+                </body>
+            </html>
+                """
+        return main_page
+
+    #En esta función se define el contenido que aparecerá en la página al rellenar el formulario
+    def content (self, list):
+        contenido = """ <html>
+                        <head><title>Resultados de su búsqueda</title></head>
+                                    <body>
+                                        <ul>"""
+        for a in list:
+            contenido += "<li>" + a + "</li>"
+        contenido += """
+                                     </ul>
+                                    </body>
+                                </html>"""
+        return contenido
+
+class OpenFDAParser(OpenFDAHTML):
     def do_GET(self):
         recurso_list = self.path.split("?")
         if len(recurso_list) > 1:
@@ -169,54 +218,7 @@ class OpenFDAParser(OpenFDAClient):
             self.wfile.write("I don't know '{}'.".format(self.path).encode())
         return
 
-class OpenFDAHTML(OpenFDAParser):
-    def start_page(self):
-        main_page ="""<html>
-                <head>
-                    <title>Medicamentos OpenFda</title>
-                </head>
-                <body align=center style='background-color: lightblue'>
-                    <h1>OpenFda</h1>
-                    <br>
-                    <p>1-.)Lista de medicamentos</p>
-                    <form method="get" action="listDrugs"><input type = "submit" value="Drugs list"></input></form>
-                    <br>
-                    <br>
-                    <p>2-.)Buscar medicamentos</p>
-                    <form method="get" action="searchDrug"><input type = "submit" value="Search drug"><input type = "text" name="drug"></input></input></form>
-                    <br>
-                    <br>
-                    <p>3-.)Lista de empresas</p>
-                    <form method="get" action="listCompanies"><input type = "submit" value="Companies list"></input></form>
-                    <br>
-                    <br>
-                    <p>4-.)Buscar empresas</p>
-                    <form method="get" action="searchCompany"><input type = "submit" value="Search companies"><input type = "text" name="company"></input></input></form>
-                    <br>
-                    <br>
-                    <p>5-.)Lista de advertencias</p>
-                    <form method="get" action="listWarnings"><input type = "submit" value="Lista Advertencias"></input></form>
-                    <br>
-                    <br>
-                    <img src="http://www.openbiomedical.org/wordpress/wp-content/uploads/2015/09/openfda_logo.jpg?x10565.png"width=30% height=20% clear=left>
-                </body>
-            </html>
-                """
-        return main_page
 
-    #En esta función se define el contenido que aparecerá en la página al rellenar el formulario
-    def content (self, list):
-        contenido = """ <html>
-                        <head><title>Resultados de su búsqueda</title></head>
-                                    <body>
-                                        <ul>"""
-        for a in list:
-            contenido += "<li>" + a + "</li>"
-        contenido += """
-                                     </ul>
-                                    </body>
-                                </html>"""
-        return contenido
 
 
 #---------------------------------------------------------------------------------------------------------------------
@@ -224,7 +226,7 @@ class OpenFDAHTML(OpenFDAParser):
 #Aquí se ejecuta el manejador
 
 socketserver.TCPServer.allow_reuse_address= True
-Handler = OpenFDAHTML
+Handler = OpenFDAParser
 httpd = socketserver.TCPServer(("", PORT), Handler)
 print("200 OK")
 print("serving at port", PORT)
