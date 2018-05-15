@@ -9,12 +9,15 @@ PORT=8000
 
 #-----------------------------------------------------------------------------------------------------------------------
 
+
+
+
+#en primer lugar utilizamos la clase encargada de la conexion que heredara de Handler para poder utilizar la ultmia clase como manejador
 class OpenFDAClient(http.server.BaseHTTPRequestHandler):
     url_openfda = "api.fda.gov"
     client_openfda = "/drug/label.json"
     drug_openfda = '&search=active_ingredient:'
     company_openfda = '&search=openfda.manufacturer_name:'
-
     def conexion (self, limit=10):
         conn = http.client.HTTPSConnection(self.url_openfda) #lo que nuestra página como cliente sugiere
         conn.request("GET", self.client_openfda + "?limit="+str(limit)) #la petición del cliente de nuestra página
@@ -25,6 +28,8 @@ class OpenFDAClient(http.server.BaseHTTPRequestHandler):
         resultados = informacion['results']
         return resultados
 
+
+#en esta clase guardamos lo relacionado con el contenido html de la página y a su vez hereda el contenido de la clase anterior
 class OpenFDAHTML(OpenFDAClient):
     def start_page(self):
         main_page ="""<html>
@@ -74,6 +79,7 @@ class OpenFDAHTML(OpenFDAClient):
                                 </html>"""
         return contenido
 
+#en esta clase almacenamos lo relacionado con la devolucion de unos datos al cliente, hereda de la anterior y por tanto de las dos anteriores
 class OpenFDAParser(OpenFDAHTML):
     def do_GET(self):
         recurso_list = self.path.split("?")
@@ -206,7 +212,7 @@ class OpenFDAParser(OpenFDAHTML):
 
         # Condición en la que al añadir a la url-> redirect nos devuelve un error
         elif 'redirect' in self.path:
-            self.send_response(301)
+            self.send_response(302)
             self.send_header('Location', 'http://127.0.0.1:8000')
             self.send_header('Content-type', 'text/html')
             self.end_headers()
