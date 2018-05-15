@@ -29,14 +29,19 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                     <p>Aqui usted puede encontrar todo tipo de informacion de medicamentos, obtenida de la base de informacion OpenFda</p>
                     <p>1-.)Lista de medicamentos</p>
                     <form action="listDrugs" method="get"><input type = "submit" value="Drug List"></input></form>
+                    <form action= "limit" method="get"><input type = "submit" value="Limit"><input type="text" name="number"></input></input></form>
                     <p>2-.)Buscar medicamentos</p>
                     <form action="searchDrug" method="get"><input type = "submit" value="search"><input type = "text" name="drug"></input></input></form>
+                    <form action= "limit" method="get"><input type = "submit" value="Limit"><input type="text" name="number"></input></input></form>
                     <p>3-.)Lista de empresas</p>
                     <form action="listCompanies method="get"><input type = "submit" value="Company List"></input></form>
+                    <form action= "limit" method="get"><input type = "submit" value="Limit"><input type="text" name="number"></input></input></form>
                     <p>4-.)Buscar empresas</p>
                     <form action="searchCompany" method="get"><input type = "submit" value="search"><input type = "text" name="company"></input></input></form>
+                    <form action= "limit" method="get"><input type = "submit" value="Limit"><input type="text" name="number"></input></input></form>
                     <p>**Advertencias**
                     <form action="listWarnings" method="get"><input type = "submit" value="Warnings List"></input></form>
+                    <form action= "limit" method="get"><input type = "submit" value="Limit"><input type="text" name="number"></input></input></form>
                     <img src="http://www.openbiomedical.org/wordpress/wp-content/uploads/2015/09/openfda_logo.jpg?x10565.png"width=30% height=20% align=right>
                 </body>
             </html>"""
@@ -185,7 +190,7 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
             for u in resultados_company:
                 if ('manufacturer_name' in u['openfda']):
-                    companies.append(u['openfda']['manufacturer_name'][0])  # buscamos dentro de los resultados con las propiedades
+                    companies.append(u['openfda']['manufacturer_name'][0])
                 else:
                     companies.append('Empresa no encontrada')
             resultado_html = self.content(companies)
@@ -196,14 +201,17 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
         #Condición en la que al añadir a la url-> redirect nos devuelve un error
         elif 'redirect' in self.path:
-            self.send_error(302)
-            self.send_header('Location', 'http://localhost:'+str(PORT))
+            self.send_response(301)
+            self.send_header('Location', 'http://127.0.0.1:8000')
+            self.send_header('Content-type','text/html')
             self.end_headers()
+
+
 
         # Condición en la que al añadir a la url-> secret nos devuelve un error
         elif 'secret' in self.path:
             self.send_error(401)
-            self.send_header('WWW-Authenticate', 'Basic realm="Mi servidor"')
+            self.send_header('WWW-Authenticate', 'Basic realm="server"')
             self.end_headers()
 
         # Condición en la que se valora cuando lo que se introduce en la url no está especificado en ninguna de las condiciones anteriores y nos salta un error
